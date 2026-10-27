@@ -148,3 +148,11 @@ also claims its own `AppUserModelID`, without which the taskbar would group the 
 
 > The tests never call `set_wallpaper` — it would change the desktop background of whoever
 > runs the suite. Only the crop and render maths are exercised.
+
+## License
+
+Wallpaper Manager is licensed under the [MIT License](LICENSE).
+
+PySide6, Qt, and other dependencies retain their own licenses. Distributing a
+bundled application requires complying with the licenses of the Qt modules and
+third-party components included; see [Qt's open-source licensing obligations](https://www.qt.io/development/open-source-lgpl-obligations).

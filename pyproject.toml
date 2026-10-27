@@ -3,6 +3,8 @@ name = "wallpaper-manager"
 version = "0.1.0"
 description = "A desktop wallpaper manager built with PySide6"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     { name = "Timo Schiller", email = "timo.schiller@googlemail.com" }
 ]
