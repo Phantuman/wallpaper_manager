@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- A stack of photos: the front sheet is the wallpaper, the one behind it
+       the rest of the folder. Shapes are kept few and bold so the icon still
+       reads at 16x16.
+
+       Qt renders SVG Tiny 1.2, which has no clipPath, so nothing here relies on
+       clipping: the ridges trace the frame's rounded bottom corners themselves
+       and every other shape sits well inside the frame. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7dd3fc"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="14" y="9" width="44" height="38" rx="5" fill="#cbd5e1"/>
+
+  <rect x="6" y="16" width="46" height="38" rx="5" fill="url(#sky)"/>
+  <circle cx="16" cy="26" r="5" fill="#fbbf24"/>
+  <path d="M6 44 L17 33 L27 42 L38 30 L52 47 L52 49 A5 5 0 0 1 47 54 L11 54
+           A5 5 0 0 1 6 49 Z" fill="#6366f1"/>
+  <path d="M16 54 L30 34 L46 54 Z" fill="#4338ca"/>
+
+  <rect
+    x="6" y="16" width="46" height="38" rx="5"
+    fill="none" stroke="#0f172a" stroke-opacity="0.18" stroke-width="2"/>
+</svg>
