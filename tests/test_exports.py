@@ -22,7 +22,7 @@ def window(qtbot, monkeypatch):
 
 
 def select_image(window, path, width=40, height=120):
-    window._model.set_results([ImageInfo(path, width, height, 1.0)])
+    window._on_scan_finished([ImageInfo(path, width, height, 1.0)])
     window._table.selectRow(0)
 
 
@@ -137,7 +137,7 @@ def test_custom_dimensions_change_preview_and_reject_zero(window, tmp_path, make
     assert window._current_target().width == 1
 
 
-def test_target_changes_wait_for_scan_button(window, image_folder, monkeypatch):
+def test_target_changes_update_cached_results_without_scanning(window, image_folder, monkeypatch):
     window._folder = image_folder
     select_image(window, image_folder / "portrait.png", 1080, 1920)
     scans = []
@@ -155,7 +155,8 @@ def test_target_changes_wait_for_scan_button(window, image_folder, monkeypatch):
     assert scans == []
     assert window._selected_info() is not None
     assert "100.0% match" in window._preview_label.full_text
-    assert "Press Scan" in window.statusBar().currentMessage()
+    assert window._model.data(window._model.index(0, 0)) == "100.0%"
+    assert window.statusBar().currentMessage() == str(image_folder / "portrait.png")
     window._scan_button.click()
     assert scans == [MonitorInfo("Custom", 1080, 1920)]
 

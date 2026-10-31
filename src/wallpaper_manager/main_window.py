@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from PySide6.QtCore import QByteArray, QItemSelection, QSettings, Qt, QThread, QUrl
@@ -144,6 +144,7 @@ class MainWindow(QMainWindow):
         self._monitors = available_monitors()
         self._thread: QThread | None = None
         self._worker: ScanWorker | None = None
+        self._scan_results: list[ImageInfo] = []
 
         self._model = ResultsModel(self)
 
@@ -204,6 +205,7 @@ class MainWindow(QMainWindow):
         self._min_size_check.setToolTip(
             "Skip images smaller than the selected resolution, which would have to be upscaled"
         )
+        self._min_size_check.toggled.connect(self._refresh_results)
         row.addWidget(self._min_size_check)
 
         self._scan_button = QPushButton("Scan")
@@ -392,12 +394,35 @@ class MainWindow(QMainWindow):
         self._custom_controls.setVisible(mode == 2)
         monitor = self._current_target()
         self._preview.set_target_ratio(monitor.ratio)
+        self._refresh_results()
         self._update_preview_caption()
         self._update_actions()
-        if self._folder is not None and not self._is_scanning():
-            self.statusBar().showMessage(
-                "Target changed. Press Scan to update image ranking and size filtering."
+
+    def _refresh_results(self) -> None:
+        """Rank and filter cached image dimensions for the current target."""
+        selected = self._selected_info()
+        target = self._current_target()
+        results = [
+            replace(info, score=aspect_score(info.aspect_ratio, target.ratio))
+            for info in self._scan_results
+            if not self._min_size_check.isChecked()
+            or (info.width >= target.width and info.height >= target.height)
+        ]
+        results.sort(key=lambda info: info.rank_key, reverse=True)
+        self._model.set_results(results)
+        if results:
+            plural = "" if len(results) == 1 else "s"
+            self._count_label.setText(f"{len(results)} image{plural}, best match first")
+            row = next(
+                (i for i, info in enumerate(results) if selected and info.path == selected.path),
+                0,
             )
+            self._table.selectRow(row)
+        else:
+            self._count_label.setText("")
+            self._on_selection_changed(QItemSelection(), QItemSelection())
+            if self._scan_results:
+                self.statusBar().showMessage("No images match the target size")
 
     def _on_selection_changed(self, _selected: QItemSelection, _deselected: QItemSelection) -> None:
         info = self._selected_info()
@@ -445,9 +470,7 @@ class MainWindow(QMainWindow):
             return
 
         monitor = self._current_target()
-        min_width = monitor.width if self._min_size_check.isChecked() else 0
-        min_height = monitor.height if self._min_size_check.isChecked() else 0
-
+        self._scan_results = []
         self._model.set_results([])
         self._preview.clear()
         self._preview_label.setText("")
@@ -457,8 +480,6 @@ class MainWindow(QMainWindow):
         self._worker = ScanWorker(
             folder=self._folder,
             target_ratio=monitor.ratio,
-            min_width=min_width,
-            min_height=min_height,
             recursive=self._recursive_check.isChecked(),
         )
         self._worker.moveToThread(self._thread)
@@ -494,15 +515,11 @@ class MainWindow(QMainWindow):
 
     def _on_scan_finished(self, results: list[ImageInfo]) -> None:
         self._teardown_thread()
-        self._model.set_results(results)
-        if results:
-            plural = "" if len(results) == 1 else "s"
-            self._count_label.setText(f"{len(results)} image{plural}, best match first")
-            # Selecting row 0 puts its full path in the status bar.
-            self._table.selectRow(0)
+        self._scan_results = results
+        self._refresh_results()
+        if self._model.rowCount():
             self._table.setFocus()
-        else:
-            self._count_label.setText("")
+        elif not results:
             self.statusBar().showMessage("No images found in that folder")
 
     def _on_scan_failed(self, message: str) -> None:

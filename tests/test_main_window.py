@@ -1,12 +1,13 @@
 from pathlib import Path
 
+import pytest
 from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QMainWindow
 
-from wallpaper_manager.main_window import MainWindow, available_monitors
+from wallpaper_manager.main_window import MainWindow, MonitorInfo, available_monitors
 from wallpaper_manager.models import ResultsModel
-from wallpaper_manager.scanning import ImageInfo
+from wallpaper_manager.scanning import ImageInfo, aspect_score
 
 
 def test_window_opens(qtbot):
@@ -106,3 +107,88 @@ def test_model_formats_columns(qtbot, image_folder: Path):
     assert text(ResultsModel.COLUMN_RESOLUTION) == "1920 x 1080"
     assert text(ResultsModel.COLUMN_RATIO) == "1.778"
     assert text(ResultsModel.COLUMN_MEGAPIXELS) == "2.1"
+
+
+@pytest.mark.parametrize("control", ["monitor", "phone", "width", "height"])
+def test_target_change_reranks_without_scanning(qtbot, image_folder, monkeypatch, control):
+    monkeypatch.setattr(
+        "wallpaper_manager.main_window.available_monitors",
+        lambda: [MonitorInfo("Wide", 1920, 1080), MonitorInfo("Portrait", 1080, 1920)],
+    )
+    window = MainWindow()
+    qtbot.addWidget(window)
+    if control in ("width", "height"):
+        window._target_combo.setCurrentIndex(2)
+        window._custom_width.setValue(1920)
+        window._custom_height.setValue(1080)
+    results = [
+        ImageInfo(image_folder / "wide_16x9.png", 1920, 1080, 1.0),
+        ImageInfo(image_folder / "portrait.png", 1080, 1920, 0.3),
+        ImageInfo(image_folder / "square.png", 1000, 1000, 0.5),
+    ]
+    window._on_scan_finished(results)
+    window._table.selectRow(2)  # Keep the same image selected as its row moves.
+    selected = window._selected_info()
+    assert selected is not None
+    selected_path = selected.path
+
+    def unexpected_scan():
+        pytest.fail("Changing the target must not rescan")
+
+    monkeypatch.setattr(window, "_start_scan", unexpected_scan)
+    if control == "monitor":
+        window._monitor_combo.setCurrentIndex(1)
+    elif control == "phone":
+        window._target_combo.setCurrentIndex(1)
+        window._phone_combo.setCurrentIndex(10)
+    elif control == "width":
+        window._custom_width.setValue(608)
+    else:
+        window._custom_height.setValue(3400)
+
+    first = window._model.info_at(0)
+    assert first is not None
+    assert first.path.name == "portrait.png"
+    for row in range(window._model.rowCount()):
+        info = window._model.info_at(row)
+        assert info is not None
+        assert info.score == aspect_score(info.aspect_ratio, window._current_target().ratio)
+    selected = window._selected_info()
+    assert selected is not None
+    assert selected.path == selected_path
+    assert window.statusBar().currentMessage() == str(selected_path)
+
+
+def test_target_size_filter_reuses_all_scanned_images(qtbot, image_folder, monkeypatch):
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window._target_combo.setCurrentIndex(2)
+    window._custom_width.setValue(1920)
+    window._custom_height.setValue(1080)
+    window._min_size_check.setChecked(True)
+    window._folder = image_folder
+    window._start_scan()
+    qtbot.waitUntil(lambda: not window._is_scanning(), timeout=10000)
+    assert window._model.rowCount() == 2
+
+    def unexpected_scan():
+        pytest.fail("Filtering cached images must not rescan")
+
+    monkeypatch.setattr(window, "_start_scan", unexpected_scan)
+    window._custom_width.setValue(8192)
+    window._custom_height.setValue(8192)
+    assert window._model.rowCount() == 0
+    assert window._selected_info() is None
+    assert not window._apply_button.isEnabled()
+    assert window._preview_label.full_text == ""
+
+    window._custom_width.setValue(640)
+    window._custom_height.setValue(360)
+    assert window._model.rowCount() == 5
+    assert window._selected_info() is not None
+    assert window._count_label.text() == "5 images, best match first"
+    window._custom_width.setValue(1920)
+    window._custom_height.setValue(1080)
+    assert window._model.rowCount() == 2
+    window._min_size_check.setChecked(False)
+    assert window._model.rowCount() == 5
