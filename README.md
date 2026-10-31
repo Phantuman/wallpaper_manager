@@ -100,7 +100,7 @@ uv run python -m wallpaper_manager
 ## Windows executable
 
 The **Build Windows executable** GitHub Actions workflow runs only on pushes to
-the `master` branch.
+the `main` branch.
 It lints and tests the app on Windows with Python 3.12, then uses PyInstaller to
 bundle the app, Python, Qt, and the app's resources into `WallpaperManager.exe`.
 No Python installation is needed to run the executable.
