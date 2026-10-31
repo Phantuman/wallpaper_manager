@@ -97,6 +97,26 @@ Or as a module:
 uv run python -m wallpaper_manager
 ```
 
+## Windows executable
+
+The **Build Windows executable** GitHub Actions workflow runs only on pushes to
+the `master` branch.
+It lints and tests the app on Windows with Python 3.12, then uses PyInstaller to
+bundle the app, Python, Qt, and the app's resources into `WallpaperManager.exe`.
+No Python installation is needed to run the executable.
+
+To download it, open a successful workflow run under **Actions** and download the
+`WallpaperManager-windows-x64` artifact. Extract the ZIP and run
+`WallpaperManager.exe`. Artifacts are kept for 30 days.
+
+To build the same executable locally on Windows after `uv sync`:
+
+```powershell
+uv run --locked --with pyinstaller==6.22.3 python -m PyInstaller --noconfirm --clean --onefile --windowed --name WallpaperManager --specpath build --collect-data wallpaper_manager src/wallpaper_manager/__main__.py
+```
+
+The output is `dist/WallpaperManager.exe`.
+
 ## Develop
 
 Run the tests:
