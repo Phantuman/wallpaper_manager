@@ -1,0 +1,38 @@
+name: Rust Windows executable
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust tools
+        run: |
+          rustup update stable
+          rustup default stable
+          rustup component add rustfmt clippy
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Lint
+        run: cargo clippy --locked --all-targets -- -D warnings
+      - name: Test (does not change wallpaper)
+        run: cargo test --locked --all-targets
+      - name: Build native executable
+        run: cargo build --locked --release
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: WallpaperManager-rust-windows-x64
+          path: |
+            target/release/WallpaperManager.exe
+            LICENSE
+            README.md
+          if-no-files-found: error
+          retention-days: 30
