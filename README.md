@@ -40,7 +40,7 @@ pull requests, main pushes, or manual dispatch.
    compare aspect ratios symmetrically; ties at six decimal places favor larger images.
 4. Drag the preview to reposition the highlighted crop, use its position slider,
    or double-click the preview to centre it. The dimmed area is excluded.
-5. **Apply to desktop** for monitor targets; **Copy cropped image** for phone and
+5. **Apply to selected display** for monitor targets; **Copy cropped image** for phone and
    custom targets. **Save PNG…** works for every target. Double-click a library
    result to perform its primary action.
 
@@ -51,11 +51,33 @@ JPEG, PNG, WebP, GIF (first frame), BMP, TIFF, ICO, PNM and TGA images are suppo
 Folder, target and scan preferences, window geometry and panel widths persist
 between launches. Existing Python/QSettings preferences are not migrated.
 
-Windows application uses `SystemParametersInfoW` with Fill, a fresh PNG under
-`%LOCALAPPDATA%\WallpaperManager\generated`, and retains the three newest
-generated files. Saved exports are separate and never pruned. The chosen
-monitor supplies the target dimensions; Windows applies the same image across
-all monitors. Per-monitor wallpaper assignment is not implemented.
+Open **Compositions · Displays · Playlists** in the header for these features:
+
+- **Saved compositions:** crop positions are remembered per image and target resolution.
+  Enter a name and save a preset to keep the image, dimensions and crop together.
+  Click its name to restore it, including after restarting the app. Saving the same
+  name replaces it; Delete removes it. Settings save periodically and on normal exit.
+- **Independent displays:** choose a monitor, select and frame an image, then
+  **Assign current crop**. Repeat for other monitors. **Preview crops** shows the
+  rendered crops in the physical display layout; **Apply layout** applies all saved
+  connected assignments. **Apply to selected display** changes only that display.
+  Assignments use Windows device paths and survive monitor reordering. Refresh
+  displays after connecting or disconnecting hardware. Disconnected assignments are
+  retained and skipped; Forget removes them. An OS failure may partially apply a layout.
+- **Scheduled playlists:** enter a name, choose images, and save. Load a saved
+  playlist, select a monitor, set a 1–1440 minute interval and press **Start / Resume**.
+  Rotation starts immediately and stays pinned to that display until another
+  playlist is loaded. **Pause** and **Next** preserve the queue. Shuffle visits each
+  image once per cycle without repeating at the cycle boundary (unless there is
+  only one image). Rotations reuse saved crops for that display's resolution.
+  Missing images, unreadable files and disconnected displays pause rotation with
+  an error. The app must remain open; playlists start paused after relaunch.
+  Interval changes take effect when the next image starts.
+
+Windows desktop application uses `IDesktopWallpaper` (Windows 8 or later), with a
+fresh PNG under `%LOCALAPPDATA%\WallpaperManager\displays`. After a successful
+change, the previous generated file for that display is removed. Files still used
+by other displays and exported PNGs are retained. Rendering stays on worker threads.
 
 ## Development
 
@@ -74,6 +96,7 @@ Windows; persistence after clipboard ownership ends varies on other platforms.
 | Source | Purpose |
 | --- | --- |
 | `rust/src/main.rs` | Native egui interface, workers, preferences and preview |
+| `rust/src/collections.rs` | Saved compositions, assignments, playlists and shuffle queue |
 | `rust/src/core.rs` | Scanning, orientation, ranking, crop and render logic |
 | `rust/src/platform.rs` | Windows monitors, desktop integration and PNG saving |
 | `.github/workflows/rust-windows.yml` | Windows validation and executable artifact |

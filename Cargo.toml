@@ -17,10 +17,12 @@ walkdir = "2"
 serde = { version = "1", features = ["derive"] }
 arboard = "3"
 kamadak-exif = "0.6"
+rand = "0.9"
+ron = "0.8"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_UI_WindowsAndMessaging", "Win32_Graphics_Gdi", "Win32_Foundation"] }
-winreg = "0.55"
+windows = { version = "0.58", features = ["Win32_UI_Shell", "Win32_System_Com", "Win32_Graphics_Gdi"] }
 
 [profile.release]
 lto = "thin"
