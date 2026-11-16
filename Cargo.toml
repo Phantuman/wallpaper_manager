@@ -1,0 +1,27 @@
+[package]
+name = "wallpaper-manager"
+version = "0.2.0"
+edition = "2024"
+license = "MIT"
+description = "A native Windows wallpaper studio"
+
+[[bin]]
+name = "WallpaperManager"
+path = "rust/src/main.rs"
+
+[dependencies]
+eframe = { version = "0.31.1", default-features = false, features = ["default_fonts", "glow", "x11", "persistence"] }
+image = { version = "0.25.9", default-features = false, features = ["png", "jpeg", "webp", "gif", "bmp", "tiff", "ico", "pnm", "tga"] }
+rfd = "0.15"
+walkdir = "2"
+serde = { version = "1", features = ["derive"] }
+arboard = "3"
+kamadak-exif = "0.6"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_UI_WindowsAndMessaging", "Win32_Graphics_Gdi", "Win32_Foundation"] }
+winreg = "0.55"
+
+[profile.release]
+lto = "thin"
+strip = true

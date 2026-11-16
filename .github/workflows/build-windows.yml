@@ -1,9 +1,7 @@
-name: Build Windows executable
+name: Legacy Python executable
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
