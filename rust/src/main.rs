@@ -432,24 +432,47 @@ impl eframe::App for Studio {
             .resizable(true)
             .show(ctx, |ui| {
                 ui.add_space(14.0);
+                ui.heading("Library");
+                ui.label("Search filenames");
+                let mut search_changed = false;
                 ui.horizontal(|ui| {
-                    ui.heading("Library");
-                    ui.label(format!("{} images", self.entries.len()));
+                    let clear_width = 65.0;
+                    search_changed = ui
+                        .add(
+                            egui::TextEdit::singleline(&mut self.query)
+                                .hint_text("Type to filter…")
+                                .desired_width(ui.available_width() - clear_width),
+                        )
+                        .changed();
+                    if ui
+                        .add_enabled(!self.query.is_empty(), egui::Button::new("Clear"))
+                        .clicked()
+                    {
+                        self.query.clear();
+                        search_changed = true;
+                    }
                 });
-                ui.add(
-                    egui::TextEdit::singleline(&mut self.query)
-                        .hint_text("Search filenames…")
-                        .desired_width(f32::INFINITY),
-                );
-                ui.label(RichText::new("BEST FIT FIRST").small().color(Color32::GRAY));
-                let query = self.query.to_lowercase();
+                let query = self.query.trim().to_lowercase();
                 let visible: Vec<usize> = self
                     .entries
                     .iter()
                     .enumerate()
-                    .filter(|(_, e)| e.path.to_string_lossy().to_lowercase().contains(&query))
+                    .filter(|(_, e)| {
+                        e.path
+                            .file_name()
+                            .unwrap_or_default()
+                            .to_string_lossy()
+                            .to_lowercase()
+                            .contains(&query)
+                    })
                     .map(|(i, _)| i)
                     .collect();
+                ui.label(format!(
+                    "{} of {} images",
+                    visible.len(),
+                    self.entries.len()
+                ));
+                ui.label(RichText::new("BEST FIT FIRST").small().color(Color32::GRAY));
                 if visible.is_empty() {
                     ui.add_space(30.0);
                     ui.label(if self.entries.is_empty() {
@@ -460,7 +483,11 @@ impl eframe::App for Studio {
                 }
                 let mut selection = None;
                 let mut activate = false;
-                egui::ScrollArea::vertical().show_rows(ui, 62.0, visible.len(), |ui, range| {
+                let mut scroll = egui::ScrollArea::vertical();
+                if search_changed {
+                    scroll = scroll.vertical_scroll_offset(0.0);
+                }
+                scroll.show_rows(ui, 62.0, visible.len(), |ui, range| {
                     for row in range {
                         let i = visible[row];
                         let entry = &self.entries[i];

@@ -34,8 +34,10 @@ pull requests, main pushes, or manual dispatch.
 2. Choose a detected Windows monitor, a phone preset, or custom dimensions
    (1–8192 pixels per axis). Target changes update the crop immediately; scan
    again to refresh ranking and size filtering.
-3. Search the ranked library and select an image. Fit scores compare aspect
-   ratios symmetrically; ties at six decimal places favor larger images.
+3. Type in **Search filenames** to filter the ranked library instantly, ignoring
+   letter case and surrounding spaces. The count shows matching and total images;
+   **Clear** restores the full list. Select a result to preview it. Fit scores
+   compare aspect ratios symmetrically; ties at six decimal places favor larger images.
 4. Drag the preview to reposition the highlighted crop, use its position slider,
    or double-click the preview to centre it. The dimmed area is excluded.
 5. **Apply to desktop** for monitor targets; **Copy cropped image** for phone and
